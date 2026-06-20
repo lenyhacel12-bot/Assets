@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>✨ Pastel Finance Tracker</title>
+<link rel="stylesheet" href="style.css" />
+<!-- Chart.js for all charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- SheetJS for Excel export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="saved-indicator" id="savedIndicator">💾 Saved</div>
+
+<header class="app-header">
+  <h1>✨ Pastel Finance Tracker 💎</h1>
+  <p class="subtitle">Your cute money companion · all in ₱ · saved on this device</p>
+  <div class="header-actions">
+    <button class="btn btn-soft" id="exportJsonBtn">⬇️ Export JSON</button>
+    <button class="btn btn-soft" id="exportXlsxBtn">📊 Export Excel</button>
+    <label class="btn btn-soft" for="importFile">⬆️ Import data</label>
+    <input type="file" id="importFile" accept="application/json,.json" hidden />
+    <button class="btn btn-danger" id="resetBtn">🧹 Reset</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="dashboard">📊 Dashboard</button>
+  <button class="tab" data-tab="assets">💎 Assets &amp; Liabilities</button>
+  <button class="tab" data-tab="income">💸 Income &amp; Expenses</button>
+  <button class="tab" data-tab="budget">🧮 Budget</button>
+  <button class="tab" data-tab="history">📈 History</button>
+  <button class="tab" data-tab="rentals">🏠 Rentals</button>
+  <button class="tab" data-tab="funds">🏦 Mutual Funds</button>
+  <button class="tab" data-tab="loans">💳 Loans</button>
+  <button class="tab" data-tab="installments">🔔 Who's Paying</button>
+  <button class="tab" data-tab="goals">🎯 Goals</button>
+</nav>
+
+<main>
+  <!-- DASHBOARD -->
+  <section class="panel active" id="panel-dashboard">
+    <h2>📊 Dashboard</h2>
+    <div id="alertBanner"></div>
+    <div class="stat-grid">
+      <div class="card stat" style="--accent:var(--lavender)"><span class="stat-label">💰 Net Worth</span><span class="stat-value" id="statNetWorth">₱0</span></div>
+      <div class="card stat" style="--accent:var(--mint)"><span class="stat-label">💎 Total Assets</span><span class="stat-value" id="statAssets">₱0</span></div>
+      <div class="card stat" style="--accent:var(--blue)"><span class="stat-label">💸 Monthly Income</span><span class="stat-value" id="statIncome">₱0</span></div>
+      <div class="card stat" style="--accent:var(--yellow)"><span class="stat-label">🐷 Net Savings</span><span class="stat-value" id="statSavings">₱0</span></div>
+    </div>
+    <div class="chart-grid">
+      <div class="card"><h3>💎 Asset Breakdown</h3><div class="chart-wrap"><canvas id="chartAssetBar"></canvas></div></div>
+      <div class="card"><h3>⚖️ Assets vs Liabilities</h3><div class="chart-wrap"><canvas id="chartAvL"></canvas></div></div>
+    </div>
+    <div class="card"><h3>🎯 Goals Progress</h3><div id="dashGoals"></div></div>
+  </section>
+
+  <!-- ASSETS & LIABILITIES -->
+  <section class="panel" id="panel-assets">
+    <h2>💎 Assets &amp; Liabilities</h2>
+    <div class="card">
+      <h3>➕ Add Asset</h3>
+      <div class="form-row">
+        <input id="assetName" placeholder="Name (e.g. BPI Savings)" />
+        <select id="assetCategory">
+          <option>Cash</option><option>Real Estate</option><option>Stocks</option>
+          <option>Mutual Fund</option><option>Vehicle</option><option>Other</option>
+        </select>
+        <input id="assetValue" type="number" placeholder="Value ₱" />
+        <button class="btn btn-primary" id="addAssetBtn">Add 💖</button>
+      </div>
+      <div class="table-wrap"><table id="assetsTable"></table></div>
+    </div>
+    <div class="card">
+      <h3>➖ Add Liability</h3>
+      <div class="form-row">
+        <input id="liabName" placeholder="Name (e.g. Car Loan)" />
+        <input id="liabValue" type="number" placeholder="Value ₱" />
+        <button class="btn btn-primary" id="addLiabBtn">Add 💖</button>
+      </div>
+      <div class="table-wrap"><table id="liabTable"></table></div>
+    </div>
+    <div class="card stat" style="--accent:var(--lavender)">
+      <span class="stat-label">Computed Net Worth</span>
+      <span class="stat-value" id="assetsNetWorth">₱0</span>
+    </div>
+  </section>
+
+  <!-- INCOME & EXPENSES -->
+  <section class="panel" id="panel-income">
+    <h2>💸 Income &amp; Expenses</h2>
+    <div class="month-bar">
+      <label>📅 Month:</label>
+      <input type="month" id="ieMonth" />
+    </div>
+    <div class="card">
+      <h3>⚡ Quick Add Shortcuts</h3>
+      <div id="shortcutButtons" class="shortcut-buttons"></div>
+      <details class="manage-shortcuts">
+        <summary>Manage shortcuts</summary>
+        <div class="form-row">
+          <select id="scType"><option value="expense">Expense</option><option value="income">Income</option></select>
+          <input id="scLabel" placeholder="Label" />
+          <input id="scCategory" placeholder="Category / Source" />
+          <input id="scAmount" type="number" placeholder="Amount ₱" />
+          <button class="btn btn-primary" id="addShortcutBtn">Add Shortcut</button>
+        </div>
+        <div id="shortcutList"></div>
+      </details>
+    </div>
+    <div class="card">
+      <h3>💵 Income</h3>
+      <div class="form-row">
+        <select id="incSource">
+          <option>Work</option><option>Business</option><option>Investments</option>
+          <option>Dividends</option><option>Stocks</option><option>Other</option>
+        </select>
+        <input id="incLabel" placeholder="Label" />
+        <input id="incAmount" type="number" placeholder="Amount ₱" />
+        <button class="btn btn-primary" id="addIncomeBtn">Add 💖</button>
+      </div>
+      <div class="table-wrap"><table id="incomeTable"></table></div>
+    </div>
+    <div class="card">
+      <h3>🧾 Expenses</h3>
+      <div class="form-row">
+        <select id="expCategory">
+          <option>Food</option><option>Rent-Utilities</option><option>Transportation</option>
+          <option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option>
+        </select>
+        <input id="expLabel" placeholder="Label (optional)" />
+        <input id="expAmount" type="number" placeholder="Amount ₱" />
+        <button class="btn btn-primary" id="addExpenseBtn">Add 💖</button>
+      </div>
+      <div class="table-wrap"><table id="expenseTable"></table></div>
+    </div>
+    <div class="chart-grid">
+      <div class="card"><h3>💵 Income by Source</h3><div class="chart-wrap"><canvas id="chartIncome"></canvas></div></div>
+      <div class="card"><h3>🧾 Expenses by Category</h3><div class="chart-wrap"><canvas id="chartExpense"></canvas></div></div>
+    </div>
+  </section>
+
+  <!-- BUDGET -->
+  <section class="panel" id="panel-budget">
+    <h2>🧮 Budget</h2>
+    <div class="month-bar">
+      <label>📅 Month:</label>
+      <input type="month" id="budgetMonth" />
+      <span class="hint">Budget compares against this month's expenses.</span>
+    </div>
+    <div class="card">
+      <h3>🎯 Monthly Budget per Category</h3>
+      <div id="budgetForm"></div>
+    </div>
+    <div class="card">
+      <h3>📊 Budget vs Actual</h3>
+      <div id="budgetProgress"></div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="panel" id="panel-history">
+    <h2>📈 History</h2>
+    <div class="card">
+      <h3>📌 Net Worth Snapshots</h3>
+      <div class="form-row">
+        <input type="month" id="snapMonth" />
+        <input id="snapValue" type="number" placeholder="Net worth ₱" />
+        <button class="btn btn-primary" id="addSnapBtn">Add Snapshot 💖</button>
+      </div>
+      <div class="table-wrap"><table id="snapTable"></table></div>
+    </div>
+    <div class="card"><h3>📈 Net Worth Over Time</h3><div class="chart-wrap tall"><canvas id="chartNetWorth"></canvas></div></div>
+    <div class="card"><h3>💹 Income vs Expenses Trend</h3><div class="chart-wrap tall"><canvas id="chartTrend"></canvas></div></div>
+  </section>
+
+  <!-- RENTALS -->
+  <section class="panel" id="panel-rentals">
+    <h2>🏠 Rental Properties</h2>
+    <div class="card">
+      <h3>➕ Add Property</h3>
+      <div class="form-row">
+        <input id="rentName" placeholder="Property name" />
+        <input id="rentIncome" type="number" placeholder="Monthly income ₱" />
+        <input id="rentExpense" type="number" placeholder="Monthly expenses ₱" />
+        <button class="btn btn-primary" id="addRentBtn">Add 💖</button>
+      </div>
+      <div class="table-wrap"><table id="rentTable"></table></div>
+    </div>
+    <div class="card stat" style="--accent:var(--mint)">
+      <span class="stat-label">Total Net Rental Income / month</span>
+      <span class="stat-value" id="rentTotal">₱0</span>
+    </div>
+  </section>
+
+  <!-- MUTUAL FUNDS -->
+  <section class="panel" id="panel-funds">
+    <h2>🏦 Mutual Funds</h2>
+    <div class="card">
+      <h3>➕ Add Fund</h3>
+      <div class="form-row">
+        <input id="fundName" placeholder="Fund name" />
+        <input id="fundInvested" type="number" placeholder="Invested ₱" />
+        <input id="fundCurrent" type="number" placeholder="Current value ₱" />
+        <button class="btn btn-primary" id="addFundBtn">Add 💖</button>
+      </div>
+      <div class="table-wrap"><table id="fundTable"></table></div>
+    </div>
+    <div class="stat-grid">
+      <div class="card stat" style="--accent:var(--blue)"><span class="stat-label">Total Invested</span><span class="stat-value" id="fundInvestedTotal">₱0</span></div>
+      <div class="card stat" style="--accent:var(--mint)"><span class="stat-label">Total Current Value</span><span class="stat-value" id="fundCurrentTotal">₱0</span></div>
+      <div class="card stat" style="--accent:var(--yellow)"><span class="stat-label">Total Gain / Loss</span><span class="stat-value" id="fundGainTotal">₱0</span></div>
+    </div>
+  </section>
+
+  <!-- LOANS -->
+  <section class="panel" id="panel-loans">
+    <h2>💳 Loans</h2>
+    <div class="stat-grid">
+      <div class="card stat" style="--accent:var(--blue)"><span class="stat-label">Total Credit Limit</span><span class="stat-value" id="loanLimitTotal">₱0</span></div>
+      <div class="card stat" style="--accent:var(--pink)"><span class="stat-label">Total Remaining</span><span class="stat-value" id="loanRemainTotal">₱0</span></div>
+      <div class="card stat" style="--accent:var(--lavender)"><span class="stat-label">Total Loan Amount</span><span class="stat-value" id="loanAmountTotal">₱0</span></div>
+      <div class="card stat" style="--accent:var(--yellow)"><span class="stat-label">Monthly Hulog Total</span><span class="stat-value" id="loanHulogTotal">₱0</span></div>
+    </div>
+    <div class="card">
+      <h3>➕ Add Loan</h3>
+      <div class="form-grid">
+        <input id="lnBank" placeholder="Bank" />
+        <input id="lnType" placeholder="Type" />
+        <input id="lnLimit" type="number" placeholder="Credit limit ₱" />
+        <input id="lnRemaining" type="number" placeholder="Remaining ₱" />
+        <input id="lnAmount" type="number" placeholder="Loan amount ₱" />
+        <input id="lnRate" type="number" step="0.01" placeholder="Interest %" />
+        <input id="lnInterest" type="number" placeholder="Interest ₱" />
+        <input id="lnStart" type="date" title="Date started" />
+        <input id="lnTerms" type="number" placeholder="Terms (months)" />
+        <input id="lnMonthly" type="number" placeholder="Monthly hulog ₱" />
+        <input id="lnProceeds" placeholder="Proceeds to (note)" />
+        <input id="lnDue" type="date" title="Due date" />
+      </div>
+      <button class="btn btn-primary" id="addLoanBtn">Add Loan 💖</button>
+    </div>
+    <div class="card">
+      <h3>📋 Loans</h3>
+      <div class="table-wrap"><table id="loanTable"></table></div>
+    </div>
+  </section>
+
+  <!-- WHO'S PAYING -->
+  <section class="panel" id="panel-installments">
+    <h2>🔔 Who's Paying</h2>
+    <div class="month-bar">
+      <label>📅 Month:</label>
+      <input type="month" id="instMonth" />
+    </div>
+    <div class="card">
+      <h3>➕ Add Installment</h3>
+      <div class="form-grid">
+        <input id="inCard" placeholder="Card name" />
+        <input id="inMerchant" placeholder="Merchant / expense" />
+        <select id="inCategory">
+          <option>Personal</option><option>Investment</option><option>VPS</option><option>3F</option><option>Other</option>
+        </select>
+        <input id="inAmount" type="number" placeholder="Monthly amount ₱" />
+        <input id="inTerms" type="number" placeholder="Total terms (months)" />
+        <input id="inStart" type="month" title="Start month" />
+      </div>
+      <button class="btn btn-primary" id="addInstBtn">Add 💖</button>
+    </div>
+    <div class="stat-grid" id="instBillCards"></div>
+    <div class="chart-grid">
+      <div class="card"><h3>💳 By Card (this month)</h3><div id="instByCard"></div></div>
+      <div class="card"><h3>🏷️ By Category (this month)</h3><div id="instByCategory"></div></div>
+    </div>
+    <div class="card">
+      <h3>📋 Installments</h3>
+      <div class="table-wrap"><table id="instTable"></table></div>
+    </div>
+  </section>
+
+  <!-- GOALS -->
+  <section class="panel" id="panel-goals">
+    <h2>🎯 Goals</h2>
+    <div class="card">
+      <h3>➕ Add Goal</h3>
+      <div class="form-row">
+        <input id="goalName" placeholder="Goal name" />
+        <input id="goalTarget" type="number" placeholder="Target ₱" />
+        <input id="goalCurrent" type="number" placeholder="Current ₱" />
+        <input id="goalDeadline" type="month" title="Deadline" />
+        <button class="btn btn-primary" id="addGoalBtn">Add 💖</button>
+      </div>
+    </div>
+    <div class="card"><h3>📊 Progress</h3><div id="goalList"></div></div>
+  </section>
+</main>
+
+<footer class="app-footer">Made with 💖 · data stays in your browser's localStorage</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
