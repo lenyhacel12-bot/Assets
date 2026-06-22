@@ -34,8 +34,15 @@ legacy/              Previous "Pastel Finance Tracker" app (archived)
    **SQL Editor** and execute it (or use the Supabase CLI: `supabase db push`).
    This creates all tables, enums, RLS policies, helper views, and the two
    private Storage buckets (`tenant-documents`, `receipts`).
-3. Create the admin user: Supabase dashboard → **Authentication → Users → Add user**
-   (email + password). MVP uses a single admin login.
+3. Create the owner login: Supabase dashboard → **Authentication → Users → Add user**
+   (email + password). A `profiles` row is created automatically with role
+   `staff`. **Promote the owner to admin** once, in the SQL Editor:
+   ```sql
+   update public.profiles set role = 'admin'
+   where id = (select id from auth.users where email = 'owner@example.com');
+   ```
+   Add an assistant later the same way (they stay `staff`). Admins can delete
+   records and manage roles; staff can read/add/edit everything else.
 4. Copy env vars: `cp .env.example .env.local` and fill in your project URL +
    anon key from **Project Settings → API**.
 5. Install & run:
@@ -49,9 +56,10 @@ legacy/              Previous "Pastel Finance Tracker" app (archived)
 
 | Table              | Purpose                                                        |
 | ------------------ | -------------------------------------------------------------- |
+| `profiles`         | One row per auth user; `role` = admin \| staff                 |
 | `locations`        | The 11 sites (name, address, notes)                            |
-| `units`            | Rentable units; `rental_type`, `monthly_rate`, `status`        |
-| `tenants`          | Occupants; contract dates, status, FK to unit                  |
+| `units`            | Rentable units; `rental_type`, `billing_cycle`, `monthly_rate`, `status` |
+| `tenants`          | Occupants; contract dates, deposit/advance, status, FK to unit |
 | `tenant_documents` | Pointers to files in Storage (ID, requirements, contract)      |
 | `payments`         | Rent payments; auto-flags overdue, denormalized `unit_id`      |
 | `expenses`         | Costs tagged to a location (and optionally a unit)             |

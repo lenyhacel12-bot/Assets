@@ -9,8 +9,16 @@ export type RentalType =
   | "room_rental"
   | "short_term";
 
+export type BillingCycle =
+  | "daily"
+  | "weekly"
+  | "biweekly"
+  | "monthly"
+  | "quarterly";
+
 export type UnitStatus = "vacant" | "occupied" | "under_repair";
 export type TenantStatus = "active" | "past" | "pending_moveout";
+export type AppRole = "admin" | "staff";
 export type PaymentStatus = "paid" | "pending" | "overdue";
 export type PaymentMethod = "cash" | "gcash" | "bank_transfer" | "check" | "other";
 export type ExpenseCategory = "repair" | "utilities" | "supplies" | "other";
@@ -26,11 +34,20 @@ export interface Location {
   updated_at: string;
 }
 
+export interface Profile {
+  id: string;
+  full_name: string | null;
+  role: AppRole;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Unit {
   id: string;
   location_id: string;
   name: string;
   rental_type: RentalType;
+  billing_cycle: BillingCycle;
   monthly_rate: number;
   status: UnitStatus;
   notes: string | null;
@@ -47,6 +64,8 @@ export interface Tenant {
   move_in_date: string | null;
   contract_end_date: string | null;
   monthly_rate: number;
+  deposit_amount: number;
+  advance_amount: number;
   status: TenantStatus;
   notes: string | null;
   created_at: string;
@@ -115,4 +134,27 @@ export const UNIT_STATUS_LABELS: Record<UnitStatus, string> = {
   vacant: "Vacant",
   occupied: "Occupied",
   under_repair: "Under Repair",
+};
+
+export const BILLING_CYCLE_LABELS: Record<BillingCycle, string> = {
+  daily: "Daily",
+  weekly: "Weekly",
+  biweekly: "Every 2 weeks",
+  monthly: "Monthly",
+  quarterly: "Quarterly",
+};
+
+// Number of days to advance a due date for each cycle (used to generate the
+// next payment due date). 'monthly'/'quarterly' are handled by month math.
+export const BILLING_CYCLE_DAYS: Record<BillingCycle, number> = {
+  daily: 1,
+  weekly: 7,
+  biweekly: 14,
+  monthly: 0,
+  quarterly: 0,
+};
+
+export const APP_ROLE_LABELS: Record<AppRole, string> = {
+  admin: "Admin",
+  staff: "Staff",
 };

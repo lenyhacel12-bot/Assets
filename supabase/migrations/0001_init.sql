@@ -10,7 +10,9 @@ create extension if not exists "pgcrypto"; -- gen_random_uuid()
 --  Enums
 -- ----------------------------------------------------------------------------
 create type rental_type     as enum ('bedspace', 'apartment', 'commercial', 'room_rental', 'short_term');
+create type billing_cycle   as enum ('daily', 'weekly', 'biweekly', 'monthly', 'quarterly');
 create type unit_status     as enum ('vacant', 'occupied', 'under_repair');
+create type app_role        as enum ('admin', 'staff');
 create type tenant_status   as enum ('active', 'past', 'pending_moveout');
 create type payment_status  as enum ('paid', 'pending', 'overdue');
 create type payment_method  as enum ('cash', 'gcash', 'bank_transfer', 'check', 'other');
@@ -27,6 +29,45 @@ begin
   new.updated_at = now();
   return new;
 end;
+$$;
+
+-- ----------------------------------------------------------------------------
+--  profiles  (one row per Supabase Auth user; carries the app role)
+--    Auto-created by a trigger on signup. New users default to 'staff';
+--    promote the owner to 'admin' once (see README).
+-- ----------------------------------------------------------------------------
+create table profiles (
+  id         uuid primary key references auth.users(id) on delete cascade,
+  full_name  text,
+  role       app_role not null default 'staff',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create trigger trg_profiles_updated before update on profiles
+  for each row execute function set_updated_at();
+
+-- Create a profile automatically whenever an auth user is created.
+create or replace function handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, full_name, role)
+  values (new.id, coalesce(new.raw_user_meta_data->>'full_name', new.email), 'staff')
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function handle_new_user();
+
+-- Is the current user an admin?  SECURITY DEFINER so it bypasses RLS on
+-- profiles (avoids policy recursion) and can be used inside other policies.
+create or replace function is_admin()
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
 $$;
 
 -- ----------------------------------------------------------------------------
@@ -49,10 +90,11 @@ create trigger trg_locations_updated before update on locations
 create table units (
   id           uuid primary key default gen_random_uuid(),
   location_id  uuid not null references locations(id) on delete cascade,
-  name         text not null,                 -- name or number, e.g. "Bed 3A", "Unit 204"
-  rental_type  rental_type not null,
-  monthly_rate numeric(12,2) not null default 0,
-  status       unit_status not null default 'vacant',
+  name          text not null,                -- name or number, e.g. "Bed 3A", "Unit 204"
+  rental_type   rental_type not null,
+  billing_cycle billing_cycle not null default 'monthly', -- drives payment due-date generation
+  monthly_rate  numeric(12,2) not null default 0,         -- rate per billing_cycle period (named 'monthly' for the common case)
+  status        unit_status not null default 'vacant',
   notes        text,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
@@ -75,6 +117,8 @@ create table tenants (
   move_in_date      date,
   contract_end_date date,
   monthly_rate      numeric(12,2) not null default 0,
+  deposit_amount    numeric(12,2) not null default 0,  -- security deposit held
+  advance_amount    numeric(12,2) not null default 0,  -- advance rent paid up front
   status            tenant_status not null default 'active',
   notes             text,
   created_at        timestamptz not null default now(),
@@ -233,9 +277,11 @@ full outer join spent
 
 -- ============================================================================
 --  Row Level Security
---  MVP: internal tool. Any authenticated user (the admin / assistant) has
---  full read/write access. Anonymous users get nothing.
+--  Internal tool with two roles. Any authenticated user (admin or staff) can
+--  read and write the operational data; only admins can DELETE rows. Anonymous
+--  users get nothing.
 -- ============================================================================
+alter table profiles         enable row level security;
 alter table locations        enable row level security;
 alter table units            enable row level security;
 alter table tenants          enable row level security;
@@ -244,6 +290,8 @@ alter table payments         enable row level security;
 alter table expenses         enable row level security;
 alter table repairs          enable row level security;
 
+-- Core operational tables: read/insert/update for any authenticated user,
+-- delete restricted to admins.
 do $$
 declare t text;
 begin
@@ -251,11 +299,19 @@ begin
     'locations','units','tenants','tenant_documents','payments','expenses','repairs'
   ]
   loop
-    execute format(
-      'create policy "authenticated full access" on %I
-         for all to authenticated using (true) with check (true);', t);
+    execute format($f$create policy "auth read %1$s"   on %1$I for select to authenticated using (true);$f$, t);
+    execute format($f$create policy "auth insert %1$s" on %1$I for insert to authenticated with check (true);$f$, t);
+    execute format($f$create policy "auth update %1$s" on %1$I for update to authenticated using (true) with check (true);$f$, t);
+    execute format($f$create policy "admin delete %1$s" on %1$I for delete to authenticated using (is_admin());$f$, t);
   end loop;
 end $$;
+
+-- profiles: everyone authenticated can see the team; only admins can change
+-- roles or remove people. (Signup inserts run via the SECURITY DEFINER trigger.)
+create policy "auth read profiles"     on profiles for select to authenticated using (true);
+create policy "admin insert profiles"  on profiles for insert to authenticated with check (is_admin());
+create policy "admin update profiles"  on profiles for update to authenticated using (is_admin()) with check (is_admin());
+create policy "admin delete profiles"  on profiles for delete to authenticated using (is_admin());
 
 -- ============================================================================
 --  Storage buckets (private) + policies
