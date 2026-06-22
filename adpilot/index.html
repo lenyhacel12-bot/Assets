@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AdPilot AI — Facebook Ads Autopilot</title>
+  <meta name="description" content="AdPilot AI — create, launch, optimize and scale Facebook ad campaigns automatically with AI." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ===== App Shell ===== -->
+  <div class="app" id="app">
+
+    <!-- ===== Sidebar ===== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-logo">A<span class="brand-spark">✦</span></div>
+        <div class="brand-name">AdPilot <span>AI</span></div>
+        <button class="icon-btn sidebar-close" id="sidebarClose" aria-label="Close menu">✕</button>
+      </div>
+
+      <nav class="nav" id="nav">
+        <a class="nav-item active" data-page="dashboard"><span class="nav-ico">▦</span> Dashboard</a>
+        <a class="nav-item" data-page="builder"><span class="nav-ico">✨</span> AI Campaign Builder</a>
+        <a class="nav-item" data-page="audience"><span class="nav-ico">◎</span> Audience Intelligence</a>
+        <a class="nav-item" data-page="copywriter"><span class="nav-ico">✎</span> AI Copywriter</a>
+        <a class="nav-item" data-page="creative"><span class="nav-ico">▣</span> Creative Generator</a>
+        <a class="nav-item" data-page="review"><span class="nav-ico">✓</span> Campaign Review</a>
+        <a class="nav-item" data-page="optimization"><span class="nav-ico">⚙</span> Optimization Center</a>
+        <a class="nav-item" data-page="learning"><span class="nav-ico">◈</span> Learning Engine</a>
+        <a class="nav-item" data-page="settings"><span class="nav-ico">⚒</span> Settings</a>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="upgrade-card">
+          <div class="upgrade-title">Autopilot is ON</div>
+          <div class="upgrade-sub">AI is managing 6 campaigns 24/7</div>
+          <div class="upgrade-bar"><span style="width:78%"></span></div>
+          <div class="upgrade-sub small">78% of monthly budget used</div>
+        </div>
+        <div class="user-card" id="userCardSide">
+          <div class="avatar">JD</div>
+          <div class="user-meta">
+            <div class="user-name">John Dela Cruz</div>
+            <div class="user-plan">Pro Plan</div>
+          </div>
+          <span class="chevron">›</span>
+        </div>
+      </div>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <!-- ===== Main ===== -->
+    <div class="main">
+      <!-- Top nav -->
+      <header class="topbar">
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
+        <div class="search">
+          <span class="search-ico">⌕</span>
+          <input type="text" placeholder="Search campaigns, audiences, creatives…" aria-label="Search" />
+          <kbd>⌘K</kbd>
+        </div>
+        <div class="topbar-actions">
+          <button class="pill-btn ghost" id="quickBuild">＋ New Campaign</button>
+          <button class="icon-btn notif" id="notifBtn" aria-label="Notifications">
+            🔔<span class="dot"></span>
+          </button>
+          <div class="profile" id="profileBtn">
+            <div class="avatar sm">JD</div>
+            <span class="chevron">▾</span>
+          </div>
+        </div>
+
+        <!-- Notifications dropdown -->
+        <div class="dropdown notif-menu" id="notifMenu" hidden>
+          <div class="dropdown-head">Notifications <span class="badge">3 new</span></div>
+          <ul class="notif-list">
+            <li><span class="ni up">▲</span><div><b>Budget increased</b> on Apartment Rental — Leads<small>AI scaled a winning ad set · 4m ago</small></div></li>
+            <li><span class="ni warn">⏸</span><div><b>Creative paused</b> — low CTR detected on Image 2<small>12m ago</small></div></li>
+            <li><span class="ni new">＋</span><div><b>New lead</b> from Dorm Rental — Leads<small>26m ago</small></div></li>
+          </ul>
+          <a class="dropdown-foot">View all activity</a>
+        </div>
+
+        <!-- Profile dropdown -->
+        <div class="dropdown profile-menu" id="profileMenu" hidden>
+          <div class="profile-head">
+            <div class="avatar">JD</div>
+            <div><div class="user-name">John Dela Cruz</div><div class="user-plan muted">john@cityview.ph</div></div>
+          </div>
+          <a class="menu-link" data-page="settings">⚒ Settings</a>
+          <a class="menu-link" data-page="learning">◈ Learning Engine</a>
+          <a class="menu-link">💳 Billing &amp; Plan</a>
+          <a class="menu-link">↪ Sign out</a>
+        </div>
+      </header>
+
+      <!-- Page content gets injected here -->
+      <main class="content" id="content" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
