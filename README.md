@@ -1,48 +1,71 @@
-# ✨ Pastel Finance Tracker 💎
+# Rental Manager
 
-A cute, girly **Personal Finance Tracker** — single-page web app, no build tools, no backend.
-All amounts are in **Philippine Peso (₱)** and all data is saved in your browser's `localStorage`.
+Internal web app for managing rental properties — bedspaces, apartments,
+commercial spaces, room rentals, and short-term rentals across multiple
+locations. Tracks units, tenants, payments, expenses, and repairs, with a
+profit dashboard and reports. Mobile-first, ₱ (PHP) throughout.
 
-## ▶️ How to run
+## Tech stack
 
-**Option A — just open it:**
-Double-click `index.html` (or drag it into your browser). That's it.
+- **Next.js 14** (App Router) + **TypeScript**
+- **Tailwind CSS** (warm terracotta / sage palette)
+- **Supabase** — Postgres + Auth (email/password) + Storage (tenant docs, receipts)
+- Data access via **`@supabase/supabase-js`** + **`@supabase/ssr`** (no ORM)
+- Deploy target: **Vercel**
 
-**Option B — local server (recommended for full reliability):**
-```bash
-# from this folder
-python3 -m http.server 8000
-# then open http://localhost:8000
+## Project layout
+
 ```
-> A server avoids some browsers' restrictions on local file access and lets the
-> Chart.js / SheetJS CDN scripts load cleanly. An internet connection is needed
-> the first time so those two CDN libraries can load.
+app/                 Next.js App Router pages & layouts
+lib/
+  supabase/client.ts Browser Supabase client
+  supabase/server.ts Server Supabase client (cookies-based session)
+  format.ts          ₱ currency + date helpers
+  types.ts           TypeScript types mirroring the DB schema
+supabase/
+  migrations/        SQL schema (run in Supabase SQL editor or CLI)
+legacy/              Previous "Pastel Finance Tracker" app (archived)
+```
 
-## 📑 Tabs / Features
+## Getting started
 
-- **📊 Dashboard** — net worth, total assets, monthly income, net savings, asset bar chart,
-  assets-vs-liabilities donut, goal progress, and an alert banner for loans/installments due or ending.
-- **💎 Assets & Liabilities** — full CRUD; auto-computed net worth.
-- **💸 Income & Expenses** — per-month picker, quick-add shortcut buttons (add/delete your own),
-  donut charts by source and category.
-- **🧮 Budget** — monthly budget per expense category with progress bars + over-budget warnings.
-- **📈 History** — net-worth snapshots line chart + income-vs-expenses trend.
-- **🏠 Rentals** — net per property, folded into monthly income.
-- **🏦 Mutual Funds** — gain/loss per fund, folded into total assets.
-- **💳 Loans** — detailed fields + summary cards (limit, remaining, loan amount, monthly hulog).
-- **🔔 Who's Paying** — credit-card installment tracker with end-month, term status, and bill
-  projections for this month + next 2 months, broken down by card and category.
-- **🎯 Goals** — progress bars toward target amounts.
+1. **Create a Supabase project** at https://supabase.com.
+2. Run the schema: open `supabase/migrations/0001_init.sql` in the Supabase
+   **SQL Editor** and execute it (or use the Supabase CLI: `supabase db push`).
+   This creates all tables, enums, RLS policies, helper views, and the two
+   private Storage buckets (`tenant-documents`, `receipts`).
+3. Create the admin user: Supabase dashboard → **Authentication → Users → Add user**
+   (email + password). MVP uses a single admin login.
+4. Copy env vars: `cp .env.example .env.local` and fill in your project URL +
+   anon key from **Project Settings → API**.
+5. Install & run:
+   ```bash
+   npm install
+   npm run dev
+   ```
+   App runs at http://localhost:3000.
 
-## 💾 Data
+## Data model (summary)
 
-- **Auto-saves** to `localStorage` on every change (little "Saved" toast bottom-right).
-- **Export JSON** / **Export Excel** (`.xlsx`, one sheet per category) / **Import** a saved JSON.
-- **Reset** restores the sample seed data (with confirmation).
+| Table              | Purpose                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| `locations`        | The 11 sites (name, address, notes)                            |
+| `units`            | Rentable units; `rental_type`, `monthly_rate`, `status`        |
+| `tenants`          | Occupants; contract dates, status, FK to unit                  |
+| `tenant_documents` | Pointers to files in Storage (ID, requirements, contract)      |
+| `payments`         | Rent payments; auto-flags overdue, denormalized `unit_id`      |
+| `expenses`         | Costs tagged to a location (and optionally a unit)             |
+| `repairs`          | Per-unit repair requests; optional link to an expense          |
 
-## 🧱 Files
-- `index.html` — markup & CDN links
-- `style.css` — pastel theme
-- `app.js` — state, CRUD, charts, export/import
+Helper views: `vacancy_summary` (vacant vs occupied per location/type) and
+`monthly_pnl` (collection vs expenses vs profit per location/month).
 
-Libraries via CDN: [Chart.js](https://www.chartjs.org/) and [SheetJS/xlsx](https://sheetjs.com/).
+## Build status
+
+- [x] Project scaffold + database schema
+- [ ] Properties/Units CRUD + Vacancy view
+- [ ] Tenants CRUD + document upload
+- [ ] Payments + overdue/reminder logic
+- [ ] Expenses + Repairs
+- [ ] Reports / profit dashboard
+- [ ] Responsive polish, empty/error states
