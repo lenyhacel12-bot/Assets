@@ -21,6 +21,14 @@ begin;
       raise exception 'TEST-FAIL: duplicate SKU was allowed';
     exception when unique_violation then null;
     end;
+    -- Duplicate barcode (new SKU, existing barcode) must also be rejected.
+    begin
+      insert into public.products (sku, barcode, name, base_unit_id)
+      values ('NEW-SKU', '4806000000011', 'Dup barcode',
+              (select id from public.units where code = 'meter'));
+      raise exception 'TEST-FAIL: duplicate barcode was allowed';
+    exception when unique_violation then null;
+    end;
   end $$;
 rollback;
 
