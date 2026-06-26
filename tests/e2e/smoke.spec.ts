@@ -14,9 +14,14 @@ test("unauthenticated visit to the app redirects to login", async ({
   await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
 });
 
-test("login placeholder renders with its notice", async ({ page }) => {
+test("login page renders the sign-in form", async ({ page }) => {
   await page.goto("/login");
-  await expect(page.getByText(/Stage 2/i)).toBeVisible();
+  await expect(page.getByLabel(/email/i)).toBeVisible();
+  await expect(page.getByLabel(/password/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /forgot password/i }),
+  ).toBeVisible();
 });
 
 test("health endpoint responds ok", async ({ page }) => {

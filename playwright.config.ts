@@ -40,9 +40,10 @@ export default defineConfig({
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
-    env: {
-      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: "public-anon-key-placeholder",
-    },
+    // Run WITHOUT Supabase configured so the smoke tests exercise the
+    // "unconfigured" path (protected routes redirect to /login) without any
+    // network calls. Auth flows that require Supabase are covered by the DB
+    // RLS suite (scripts/db-test.sh), not E2E.
+    env: { NODE_ENV: "production" },
   },
 });

@@ -196,19 +196,51 @@ moved to `legacy/` and excluded from lint/build/test surfaces.
 
 ## ADR-0013 — Temporary `DEV_PREVIEW` flag for Stage 1 shell preview
 
-**Status:** Accepted (Stage 1) — _to be removed in Stage 2_
+**Status:** Superseded by ADR-0014 (removed in Stage 2)
 
-**Context.** Until Stage 2 implements Supabase auth there is no way to obtain a
-session, so the secure default (redirect protected routes to `/login`) makes the
+**Context.** Until Stage 2 implemented Supabase auth there was no way to obtain a
+session, so the secure default (redirect protected routes to `/login`) made the
 app shell impossible to preview.
 
-**Decision.** A **server-only**, non-production env flag `DEV_PREVIEW=1` causes
-middleware to treat the request as authenticated. It is ignored when
-`NODE_ENV === "production"`, never exposed to the client, and documented as
-temporary scaffolding.
+**Decision.** A **server-only**, non-production env flag `DEV_PREVIEW=1` caused
+middleware to treat the request as authenticated.
 
-**Consequences.** Reviewers can preview the shell locally without weakening the
-default behaviour. Stage 2 must delete this flag once real sessions exist.
+**Consequences.** **Removed in Stage 2** now that real Supabase sessions exist.
+Middleware no longer reads `DEV_PREVIEW`.
+
+---
+
+## ADR-0014 — Stage 2 authentication, RBAC and RLS
+
+**Status:** Accepted (Stage 2)
+
+**Context.** Stage 2 introduces real accounts, branches, roles and
+database-level access control.
+
+**Decision.**
+
+- **Migrations** live in `supabase/migrations/` (timestamp-prefixed): core
+  schema, `app.*` SECURITY DEFINER helper functions, RLS policies + grants, and
+  an idempotent RBAC seed (4 branches, 9 roles, 23 permissions, the
+  role→permission matrix).
+- **Authorization is permission-based.** RLS policies call
+  `app.has_permission(code)` / `app.can_view_branch(id)`; the app mirrors the
+  catalogue in `src/lib/auth/permissions.ts` and checks permission codes, never
+  role names.
+- **Branch visibility** = `branches.view_all` (Owner / Accounting / Auditor) OR
+  membership in `user_branches` with `branches.view_assigned`.
+- **Deactivation is enforced in the database**: helper functions resolve a
+  deactivated profile to zero permissions / zero visible branches.
+- **Self-service safety**: the profiles update policy `WITH CHECK (is_active =
+true)` stops a user changing their own active flag; only `users.manage` can.
+- **Service-role key** is used only in `src/lib/supabase/admin.ts` (guarded by
+  `import "server-only"`) for invitation; every admin action first verifies
+  `users.manage`.
+- **Testing**: RLS is verified against real Postgres via `scripts/db-test.sh`
+  (auth stubs + the `authenticated` role) — 11 assertions over the matrix.
+
+**Consequences.** UI gating is convenience only; the database is authoritative.
+Later stages attach `branch_id` + RLS to every new table following this pattern.
 
 ---
 

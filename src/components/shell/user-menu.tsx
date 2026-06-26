@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { CircleUser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,13 +12,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/i18n/provider";
+import { useOptionalSession } from "@/components/providers/session-provider";
+import { signOutAction } from "@/app/(auth)/actions";
 
-/**
- * Placeholder user menu. Sign-out and profile are wired to real auth in
- * Stage 2; here they are inert menu entries.
- */
 export function UserMenu() {
   const { t } = useTranslation();
+  const session = useOptionalSession();
+  const name = session?.profile.full_name || t("shell.account");
+  const email = session?.email;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -30,11 +33,29 @@ export function UserMenu() {
           <CircleUser className="size-5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>{t("shell.account")}</DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>
+          <div className="flex flex-col">
+            <span className="truncate font-medium">{name}</span>
+            {email && (
+              <span className="truncate text-xs font-normal text-muted-foreground">
+                {email}
+              </span>
+            )}
+          </div>
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>{t("shell.profile")}</DropdownMenuItem>
-        <DropdownMenuItem disabled>{t("shell.signOut")}</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/profile">{t("shell.profile")}</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <form action={signOutAction}>
+          <button type="submit" className="w-full">
+            <DropdownMenuItem className="text-destructive focus:text-destructive">
+              {t("shell.signOut")}
+            </DropdownMenuItem>
+          </button>
+        </form>
       </DropdownMenuContent>
     </DropdownMenu>
   );

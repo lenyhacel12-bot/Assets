@@ -12,25 +12,32 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/i18n/provider";
+import { useOptionalSession } from "@/components/providers/session-provider";
+import { canViewAllBranches } from "@/lib/auth/permissions";
+
+const ALL = "ALL";
 
 /**
- * Placeholder branch selector. The real branch list and visibility rules
- * (Owner/Accounting see all; branch staff see only assigned) are seeded and
- * enforced via RLS in Stage 2. Selection here is local UI state only.
+ * Branch selector populated from the branches the user may actually see
+ * (RLS-filtered server-side). The "All branches" option is offered only to
+ * users with `branches.view_all` (Owner, Accounting, Auditor). Selection is
+ * local UI state in Stage 2; later stages use it to scope queries.
  */
-const BRANCHES = [
-  { code: "ALL", labelKey: "shell.allBranches" },
-  { code: "MNL", labelKey: "branches.mnl" },
-  { code: "CEB", labelKey: "branches.ceb" },
-  { code: "PAM", labelKey: "branches.pam" },
-  { code: "ANT", labelKey: "branches.ant" },
-] as const;
-
 export function BranchSelector() {
   const { t } = useTranslation();
-  const [selected, setSelected] = useState<string>("ALL");
+  const session = useOptionalSession();
+  const branches = session?.branches ?? [];
+  const showAll = session ? canViewAllBranches(session.permissions) : false;
 
-  const current = BRANCHES.find((b) => b.code === selected) ?? BRANCHES[0];
+  const [selected, setSelected] = useState<string>(
+    showAll || branches.length !== 1 ? ALL : branches[0]!.id,
+  );
+
+  const currentLabel =
+    selected === ALL
+      ? t("shell.allBranches")
+      : (branches.find((b) => b.id === selected)?.name ??
+        t("shell.allBranches"));
 
   return (
     <DropdownMenu>
@@ -42,20 +49,30 @@ export function BranchSelector() {
           data-testid="branch-selector"
         >
           <Building2 className="size-4" />
-          <span className="hidden sm:inline">{t(current.labelKey)}</span>
+          <span className="hidden max-w-32 truncate sm:inline">
+            {currentLabel}
+          </span>
           <ChevronDown className="size-3 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuLabel>{t("shell.branch")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {BRANCHES.map((branch) => (
+        {showAll && (
           <DropdownMenuCheckboxItem
-            key={branch.code}
-            checked={selected === branch.code}
-            onCheckedChange={() => setSelected(branch.code)}
+            checked={selected === ALL}
+            onCheckedChange={() => setSelected(ALL)}
           >
-            {t(branch.labelKey)}
+            {t("shell.allBranches")}
+          </DropdownMenuCheckboxItem>
+        )}
+        {branches.map((branch) => (
+          <DropdownMenuCheckboxItem
+            key={branch.id}
+            checked={selected === branch.id}
+            onCheckedChange={() => setSelected(branch.id)}
+          >
+            {branch.name}
           </DropdownMenuCheckboxItem>
         ))}
       </DropdownMenuContent>

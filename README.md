@@ -45,9 +45,23 @@ that need Supabase throw a clear, actionable error if configuration is missing.
 2. From **Project Settings → API**, copy the **Project URL** and **anon public**
    key into `.env.local`.
 3. Keep the **service_role** key server-side only (do not prefix it with
-   `NEXT_PUBLIC_`). It is unused until later stages.
-4. Database migrations and seed data arrive from **Stage 2**
-   (`supabase/migrations/`).
+   `NEXT_PUBLIC_`). It is used only for privileged server tasks (user invitation)
+   via `src/lib/supabase/admin.ts`.
+4. Apply the migrations in `supabase/migrations/` (in filename order) to your
+   Supabase project — e.g. with the Supabase CLI (`supabase db push`) or by
+   running the SQL files. They create the schema, RBAC seed and RLS policies.
+
+### Database migrations & RLS tests
+
+Migrations live in `supabase/migrations/` (timestamp-prefixed, applied in order).
+RLS is tested against a real local Postgres with `scripts/db-test.sh`, which
+recreates a throwaway database, applies every migration, seeds synthetic users,
+and asserts the access matrix (Owner sees all branches, branch staff are
+isolated, auditor is read-only, deactivated users see nothing, etc.):
+
+```bash
+npm run test:db        # requires a local Postgres superuser (see the script header)
+```
 
 ## Local development
 
@@ -57,12 +71,9 @@ npm run dev        # start the dev server at http://localhost:3000
 ```
 
 Without Supabase configured (or without a session), protected routes redirect to
-`/login`. To **preview the app shell** before Stage 2 wires real auth, set the
-server-only dev flag (non-production only):
-
-```bash
-DEV_PREVIEW=1 npm run dev
-```
+`/login`. Sign in with a Supabase user whose `profiles.is_active = true`. The
+first Owner account is bootstrapped by creating an auth user and assigning the
+`owner` role (`user_roles`) — see the Stage 2 report / `supabase/migrations`.
 
 ## Commands
 
@@ -83,11 +94,14 @@ DEV_PREVIEW=1 npm run dev
 
 - **Unit tests** live in `tests/unit/` (jsdom). They cover env validation,
   route-protection logic, the navigation map, i18n parity, and shell rendering.
-- **E2E tests** live in `tests/e2e/` and boot the production server with
-  placeholder public env vars. In sandboxes where Playwright's bundled browser
-  is unavailable, point it at a local Chromium:
-  `PLAYWRIGHT_CHROMIUM_PATH=/path/to/chromium npm run test:e2e`. Locally, run
-  `npx playwright install` once instead.
+- **E2E tests** live in `tests/e2e/` and boot the production server in the
+  "unconfigured" mode (protected routes redirect to `/login`, no network). In
+  sandboxes where Playwright's bundled browser is unavailable, point it at a
+  local Chromium: `PLAYWRIGHT_CHROMIUM_PATH=/path/to/chromium npm run test:e2e`.
+  Locally, run `npx playwright install` once instead.
+- **Database / RLS tests** (`npm run test:db`) apply the migrations to a real
+  throwaway Postgres and assert the access-control matrix. See
+  `tests/db/` and `scripts/db-test.sh`.
 
 ## Project structure
 

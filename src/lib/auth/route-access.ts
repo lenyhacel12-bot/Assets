@@ -45,8 +45,12 @@ export type RouteDecision =
 
 /**
  * Decide what to do with a request given whether the path is protected and
- * whether the user has a session. Login page is hidden from already-signed-in
- * users (sent to the dashboard).
+ * whether the user has a Supabase session.
+ *
+ * Middleware only guards *protected* routes here. Redirecting an already
+ * signed-in user away from /login is handled by the login page itself (which
+ * checks for an *active* session) — keeping that out of middleware avoids a
+ * redirect loop for authenticated-but-deactivated users.
  */
 export function decideRouteAccess(params: {
   pathname: string;
@@ -55,13 +59,7 @@ export function decideRouteAccess(params: {
   const { pathname, hasSession } = params;
 
   if (isAlwaysAllowed(pathname)) return { type: "allow" };
-
-  if (isPublicPath(pathname)) {
-    if (hasSession && (pathname === "/login" || pathname === "/")) {
-      return { type: "redirect", to: "/dashboard" };
-    }
-    return { type: "allow" };
-  }
+  if (isPublicPath(pathname)) return { type: "allow" };
 
   // Protected.
   if (!hasSession) {

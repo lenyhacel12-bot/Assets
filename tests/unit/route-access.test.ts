@@ -31,9 +31,9 @@ describe("route access (coarse protection)", () => {
     ).toEqual({ type: "allow" });
   });
 
-  it("keeps signed-in users away from the login page", () => {
+  it("lets signed-in users reach the login page (the page redirects active sessions itself)", () => {
     expect(decideRouteAccess({ pathname: "/login", hasSession: true })).toEqual(
-      { type: "redirect", to: "/dashboard" },
+      { type: "allow" },
     );
   });
 
