@@ -30,11 +30,18 @@ for f in "$ROOT"/supabase/migrations/*.sql; do
   run_db -f "$f" >/dev/null
 done
 
-echo "==> Seeding synthetic test users"
-run_db -f "$ROOT/tests/db/10_seed_test_users.sql" >/dev/null
-
-echo "==> Running RLS test suite"
-run_db -f "$ROOT/tests/db/20_rls_tests.sql"
+echo "==> Running seed + test suites"
+# Every tests/db/*.sql except the bootstrap (00_*), in lexical order.
+# Convention: *seed* files seed data (quiet); *tests* files assert (verbose).
+for f in "$ROOT"/tests/db/[1-9]*.sql; do
+  name="$(basename "$f")"
+  echo "    - $name"
+  if [[ "$name" == *seed* ]]; then
+    run_db -f "$f" >/dev/null
+  else
+    run_db -f "$f"
+  fi
+done
 
 echo "==> Cleaning up"
 run_super -c "drop database if exists $DB_NAME;" >/dev/null
