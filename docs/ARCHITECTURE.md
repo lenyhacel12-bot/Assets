@@ -79,13 +79,13 @@ from server-only environment variables.
 
 ## 5. Critical services
 
-| Service | Responsibility |
-| --- | --- |
-| **Inventory service** | Post immutable movements inside transactions; compute balances; enforce unique posting keys; open-roll logic; never edit balances directly. |
-| **Accounting service** | Build balanced double-entry journals from source documents; post immutably; reversals/adjustments only. |
-| **Tax service** | VAT (input/output, exempt/zero-rated) and withholding computations, in decimal. |
-| **Document numbering service** | Per-branch, per-document-type sequence allocation (PO, invoice, OR, etc.) without gaps/races. |
-| **Pricing service** | Resolve price (standard → tier → customer-specific → manual override) and record override audit. |
+| Service                        | Responsibility                                                                                                                              |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Inventory service**          | Post immutable movements inside transactions; compute balances; enforce unique posting keys; open-roll logic; never edit balances directly. |
+| **Accounting service**         | Build balanced double-entry journals from source documents; post immutably; reversals/adjustments only.                                     |
+| **Tax service**                | VAT (input/output, exempt/zero-rated) and withholding computations, in decimal.                                                             |
+| **Document numbering service** | Per-branch, per-document-type sequence allocation (PO, invoice, OR, etc.) without gaps/races.                                               |
+| **Pricing service**            | Resolve price (standard → tier → customer-specific → manual override) and record override audit.                                            |
 
 ## 6. Money & numeric strategy
 
@@ -99,7 +99,7 @@ from server-only environment variables.
 
 - Inventory and accounting postings run in **DB transactions**.
 - Each posting carries a **unique posting key** (e.g. `source_doc_type +
-  source_doc_id + line + device_ref`) with a unique constraint, so retries and
+source_doc_id + line + device_ref`) with a unique constraint, so retries and
   offline re-sync cannot double-post.
 - Balance reads are computed from movements (optionally materialized in a
   balances table maintained only by the movement-posting function).
@@ -160,4 +160,3 @@ from server-only environment variables.
 
 > The folder structure is a **plan**. Stage 1 scaffolds it; nothing here is
 > created in Stage 0.
-</content>

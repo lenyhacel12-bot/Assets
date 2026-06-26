@@ -1,48 +1,111 @@
-# ✨ Pastel Finance Tracker 💎
+# 3F Enterprises — Inventory, Sales & Accounting
 
-A cute, girly **Personal Finance Tracker** — single-page web app, no build tools, no backend.
-All amounts are in **Philippine Peso (₱)** and all data is saved in your browser's `localStorage`.
+A multi-branch inventory, sales and accounting web application for **3F
+Enterprises** (Manila, Cebu, Pampanga, Antipolo).
 
-## ▶️ How to run
+> **Project status:** Foundation (Stage 1). The application shell, tooling and
+> infrastructure are in place; business modules are placeholders built in later
+> stages. See [`docs/DEVELOPMENT_STAGES.md`](docs/DEVELOPMENT_STAGES.md) for the
+> full 16-stage plan and [`CLAUDE.md`](CLAUDE.md) for the engineering rules.
+>
+> The previous "Pastel Finance Tracker" prototype has been moved to
+> [`legacy/`](legacy/) (see `docs/DECISIONS.md` ADR-0001).
 
-**Option A — just open it:**
-Double-click `index.html` (or drag it into your browser). That's it.
+## Tech stack
 
-**Option B — local server (recommended for full reliability):**
+Next.js (App Router) · TypeScript (strict) · Tailwind CSS · shadcn/ui ·
+Supabase (Postgres / Auth / Storage) · Vitest · Playwright · PWA.
+
+## Prerequisites
+
+- Node.js 20+ (developed on Node 22)
+- npm 10+
+- A Supabase project (for auth/data — wired from Stage 2)
+
+## Environment variables
+
+Copy the example file and fill in your Supabase values:
+
 ```bash
-# from this folder
-python3 -m http.server 8000
-# then open http://localhost:8000
+cp .env.example .env.local
 ```
-> A server avoids some browsers' restrictions on local file access and lets the
-> Chart.js / SheetJS CDN scripts load cleanly. An internet connection is needed
-> the first time so those two CDN libraries can load.
 
-## 📑 Tabs / Features
+| Variable                        | Scope           | Purpose                                            |
+| ------------------------------- | --------------- | -------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | public          | Supabase project URL                               |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | public          | Supabase anon key (RLS-scoped)                     |
+| `SUPABASE_SERVICE_ROLE_KEY`     | **server-only** | Privileged admin tasks (never sent to the browser) |
 
-- **📊 Dashboard** — net worth, total assets, monthly income, net savings, asset bar chart,
-  assets-vs-liabilities donut, goal progress, and an alert banner for loans/installments due or ending.
-- **💎 Assets & Liabilities** — full CRUD; auto-computed net worth.
-- **💸 Income & Expenses** — per-month picker, quick-add shortcut buttons (add/delete your own),
-  donut charts by source and category.
-- **🧮 Budget** — monthly budget per expense category with progress bars + over-budget warnings.
-- **📈 History** — net-worth snapshots line chart + income-vs-expenses trend.
-- **🏠 Rentals** — net per property, folded into monthly income.
-- **🏦 Mutual Funds** — gain/loss per fund, folded into total assets.
-- **💳 Loans** — detailed fields + summary cards (limit, remaining, loan amount, monthly hulog).
-- **🔔 Who's Paying** — credit-card installment tracker with end-month, term status, and bill
-  projections for this month + next 2 months, broken down by card and category.
-- **🎯 Goals** — progress bars toward target amounts.
+Variables are validated lazily by [`src/lib/env.ts`](src/lib/env.ts); code paths
+that need Supabase throw a clear, actionable error if configuration is missing.
 
-## 💾 Data
+### Supabase setup (summary)
 
-- **Auto-saves** to `localStorage` on every change (little "Saved" toast bottom-right).
-- **Export JSON** / **Export Excel** (`.xlsx`, one sheet per category) / **Import** a saved JSON.
-- **Reset** restores the sample seed data (with confirmation).
+1. Create a project at <https://supabase.com>.
+2. From **Project Settings → API**, copy the **Project URL** and **anon public**
+   key into `.env.local`.
+3. Keep the **service_role** key server-side only (do not prefix it with
+   `NEXT_PUBLIC_`). It is unused until later stages.
+4. Database migrations and seed data arrive from **Stage 2**
+   (`supabase/migrations/`).
 
-## 🧱 Files
-- `index.html` — markup & CDN links
-- `style.css` — pastel theme
-- `app.js` — state, CRUD, charts, export/import
+## Local development
 
-Libraries via CDN: [Chart.js](https://www.chartjs.org/) and [SheetJS/xlsx](https://sheetjs.com/).
+```bash
+npm install        # install dependencies
+npm run dev        # start the dev server at http://localhost:3000
+```
+
+Without Supabase configured (or without a session), protected routes redirect to
+`/login`. To **preview the app shell** before Stage 2 wires real auth, set the
+server-only dev flag (non-production only):
+
+```bash
+DEV_PREVIEW=1 npm run dev
+```
+
+## Commands
+
+| Command                | Description                               |
+| ---------------------- | ----------------------------------------- |
+| `npm run dev`          | Start the development server              |
+| `npm run build`        | Production build                          |
+| `npm run start`        | Start the production server (after build) |
+| `npm run lint`         | ESLint                                    |
+| `npm run typecheck`    | TypeScript type-check (no emit)           |
+| `npm run format`       | Prettier write                            |
+| `npm run format:check` | Prettier check                            |
+| `npm test`             | Unit tests (Vitest)                       |
+| `npm run test:watch`   | Unit tests in watch mode                  |
+| `npm run test:e2e`     | End-to-end tests (Playwright)             |
+
+### Notes on tests
+
+- **Unit tests** live in `tests/unit/` (jsdom). They cover env validation,
+  route-protection logic, the navigation map, i18n parity, and shell rendering.
+- **E2E tests** live in `tests/e2e/` and boot the production server with
+  placeholder public env vars. In sandboxes where Playwright's bundled browser
+  is unavailable, point it at a local Chromium:
+  `PLAYWRIGHT_CHROMIUM_PATH=/path/to/chromium npm run test:e2e`. Locally, run
+  `npx playwright install` once instead.
+
+## Project structure
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full layout. In brief:
+
+```
+src/app/            App Router routes — (auth) public group, (app) protected shell
+src/components/     UI primitives (ui/) and the application shell (shell/)
+src/config/         Navigation map
+src/i18n/           English + Tagalog dictionaries and provider
+src/lib/            env validation, utils, Supabase clients, auth helpers
+tests/              unit/ (Vitest) and e2e/ (Playwright)
+docs/               Planning and decision records
+legacy/             Archived Pastel Finance Tracker prototype
+```
+
+## Internationalization
+
+UI text is keyed through `src/i18n` (English + Tagalog). Do **not** hard-code
+user-facing strings in components — add keys to `src/i18n/en.ts` and
+`src/i18n/tl.ts` (key parity is enforced by a unit test).

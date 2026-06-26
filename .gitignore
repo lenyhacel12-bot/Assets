@@ -1,3 +1,32 @@
+# dependencies
 node_modules/
+.pnp
+.pnp.*
+
+# next.js
+.next/
+out/
+build/
+
+# production
+dist/
+
+# testing
+coverage/
+playwright-report/
+test-results/
+.playwright/
+
+# env files (never commit real secrets)
+.env
+.env.local
+.env*.local
+
+# misc
 *.log
 .DS_Store
+*.pem
+next-env.d.ts
+.vercel
+.tsbuildinfo
+*.tsbuildinfo

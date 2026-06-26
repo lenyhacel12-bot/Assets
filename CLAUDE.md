@@ -30,18 +30,18 @@ cost, price and stock count.
 
 ## 2. Planned technology stack
 
-| Concern | Choice |
-| --- | --- |
-| Framework | Next.js (App Router) |
-| Language | TypeScript, **strict mode** |
-| Styling | Tailwind CSS |
-| UI components | shadcn/ui |
-| Database | Supabase PostgreSQL |
-| Auth | Supabase Authentication |
-| File storage | Supabase Storage |
-| Hosting | Vercel |
-| Offline / installable | Progressive Web App (PWA) |
-| Scanning | Mobile camera barcode scanning + USB/Bluetooth keyboard-emulating scanners |
+| Concern               | Choice                                                                     |
+| --------------------- | -------------------------------------------------------------------------- |
+| Framework             | Next.js (App Router)                                                       |
+| Language              | TypeScript, **strict mode**                                                |
+| Styling               | Tailwind CSS                                                               |
+| UI components         | shadcn/ui                                                                  |
+| Database              | Supabase PostgreSQL                                                        |
+| Auth                  | Supabase Authentication                                                    |
+| File storage          | Supabase Storage                                                           |
+| Hosting               | Vercel                                                                     |
+| Offline / installable | Progressive Web App (PWA)                                                  |
+| Scanning              | Mobile camera barcode scanning + USB/Bluetooth keyboard-emulating scanners |
 
 Use **current stable, mutually compatible versions**. Do **not** upgrade
 unrelated dependencies without a recorded reason in `docs/DECISIONS.md`.
@@ -74,15 +74,17 @@ A stage is not "done" until this report is provided.
 ## 4. Non-negotiable engineering rules
 
 ### Money & quantities
+
 - Use **`numeric`/`decimal`** database types for all money and quantity
   columns. Never use floating-point columns for financial data.
-- **Never** use JavaScript floating-point (`number`) for *final* financial
+- **Never** use JavaScript floating-point (`number`) for _final_ financial
   calculations. Use integer minor units or a decimal library, and do
   authoritative math in the database / SQL where possible.
 - Store monetary values **consistently** (same currency handling, same scale,
   documented in `docs/DATABASE_PLAN.md`).
 
 ### Inventory integrity
+
 - **Stock balances must be derived from immutable inventory movements**, never
   from a hand-editable quantity field.
 - **Never directly edit calculated stock balances.** Corrections are made by
@@ -92,11 +94,13 @@ A stage is not "done" until this report is provided.
   prevent double stock deduction.
 
 ### Accounting integrity
+
 - **Posted accounting entries must not be directly edited.** Corrections use
   **reversal or adjustment** transactions only.
 - Double-entry: every posted journal must balance (debits = credits).
 
 ### Data model conventions
+
 - **UUID primary keys** everywhere.
 - Standard columns where applicable: `created_at`, `updated_at`, `created_by`,
   and **branch ownership** (`branch_id`).
@@ -104,12 +108,14 @@ A stage is not "done" until this report is provided.
   transactions. Never hard-delete a master record used by a transaction.
 
 ### Security
+
 - Enforce access with **Supabase Row Level Security (RLS)** at the database
   level. UI restrictions are never sufficient on their own.
 - **Never** put the Supabase **service-role key** in browser/client code.
 - Validate **all** server inputs (e.g. with a schema validator like Zod).
 
 ### Code quality
+
 - **No `any`** in TypeScript. Prefer precise types; use `unknown` + narrowing
   when needed.
 - **Keep business logic out of React components.** Put it in reusable services.
@@ -132,6 +138,7 @@ A stage is not "done" until this report is provided.
 ## 6. Working agreement for AI agents
 
 Before starting any stage:
+
 1. Read this file (`CLAUDE.md`).
 2. Read the relevant files in `docs/`.
 3. Inspect the current repository and existing migrations.
@@ -142,5 +149,4 @@ Before starting any stage:
 
 When a decision has architectural impact, record it in `docs/DECISIONS.md`
 as a new ADR.
-</content>
 </invoke>

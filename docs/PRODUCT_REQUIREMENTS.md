@@ -23,6 +23,7 @@ Purchasing Staff, Accounting Staff, Auditor. Authorization is
 **permission-based**, not role-name based (see `SECURITY_PLAN.md`).
 
 Visibility:
+
 - Normal branch employees see **only their assigned branch(es)**.
 - Owner sees **all** branches.
 - Authorized accounting users see **all** branches.
@@ -31,6 +32,7 @@ Visibility:
 ## 4. Core domain concepts
 
 ### 4.1 Products and variants
+
 - A product can sell per **Roll, Meter, Piece, Liter, Box**.
 - **Every variant is a separate inventory item** with its own SKU, barcode,
   cost, price and stock. Example: "Frosted Reeded 4 ft × 50 m" and "Frosted
@@ -40,6 +42,7 @@ Visibility:
 - Roll-and-meter products carry a **standard roll length** (e.g. 30/45/50 m).
 
 ### 4.2 Pricing
+
 - Regular selling price, distributor reference price, quantity price tiers,
   customer-specific negotiated prices, and a **manually entered transaction
   price**.
@@ -50,6 +53,7 @@ Visibility:
 - Discounts are based on **actual peso value / final price**, not only percent.
 
 ### 4.3 Inventory
+
 - Stock is the result of **immutable inventory movements**, never a hand-edited
   number.
 - Track sealed rolls, open/cut rolls (with remaining meters), available,
@@ -59,6 +63,7 @@ Visibility:
   verify and update fulfillment — they do **not** deduct again.
 
 ### 4.4 Accounting
+
 - **Double-entry**, with immutable posted entries. Corrections via reversal /
   adjustment only.
 - Eventually replaces / absorbs **five years** of QuickBooks history.
@@ -109,4 +114,3 @@ Each maps to one or more development stages (see `DEVELOPMENT_STAGES.md`).
 - Hosted on Vercel with Supabase as the backend.
 - Internet-first, with offline tolerance for warehouse scanning.
 - Trainee-friendly UI is a hard requirement, not a nice-to-have.
-</content>

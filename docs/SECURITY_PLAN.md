@@ -45,6 +45,7 @@
   and consistent.
 
 ### Example policy intent (illustrative, finalized in Stage 2)
+
 ```
 -- SELECT on inventory_movements
 USING (
@@ -111,4 +112,3 @@ USING (
   flag. (Tracked in `DECISIONS.md`.)
 - MFA for Owner/Accounting accounts (candidate for a later hardening stage).
 - Rate limiting / brute-force protection strategy for auth endpoints.
-</content>

@@ -9,6 +9,7 @@ Status legend: **Accepted** · **Proposed** · **Open** (decision deferred) ·
 ---
 
 ## ADR-0001 — Disposition of the existing "Pastel Finance Tracker"
+
 **Status:** Accepted (Stage 0)
 
 **Context.** The repository at Stage 0 contains an unrelated single-page
@@ -27,9 +28,15 @@ that point.
 **Consequences.** Stage 0 leaves the existing files in place and untouched.
 Stage 1 must explicitly address them (move to `legacy/`) and record the action.
 
+**Update (Stage 1):** Done. `index.html`, `style.css`, `app.js` and the old
+`README.md` were moved under `legacy/` via `git mv`, and a new root `README.md`
+documents the 3F Enterprises app. The `legacy/` folder is excluded from the
+Next.js build, ESLint, Prettier and test surfaces.
+
 ---
 
 ## ADR-0002 — Framework & platform
+
 **Status:** Accepted
 
 **Decision.** Next.js (App Router) + TypeScript strict + Tailwind + shadcn/ui,
@@ -43,6 +50,7 @@ auth/session with Supabase middleware.
 ---
 
 ## ADR-0003 — Money and quantities use database decimals, never JS floats
+
 **Status:** Accepted
 
 **Decision.** All money/quantity columns are Postgres `numeric` with documented
@@ -56,6 +64,7 @@ values as strings/decimals to avoid float coercion.
 ---
 
 ## ADR-0004 — Stock balances are derived from immutable movements
+
 **Status:** Accepted
 
 **Decision.** The authoritative stock record is the append-only
@@ -68,6 +77,7 @@ return, a transfer — all are movements. Enables full traceability and audit.
 ---
 
 ## ADR-0005 — Idempotent postings via a unique posting key
+
 **Status:** Accepted
 
 **Decision.** Every inventory movement and journal entry carries a **unique
@@ -80,6 +90,7 @@ offline sync (Stage 15) safe by construction.
 ---
 
 ## ADR-0006 — Inventory deducts once, at invoice posting
+
 **Status:** Accepted
 
 **Decision.** Stock is deducted exactly once when a sales invoice is posted.
@@ -92,6 +103,7 @@ flow is fulfillment, not stock movement, for sales releases.
 ---
 
 ## ADR-0007 — Posted accounting entries are immutable; corrections via reversal
+
 **Status:** Accepted
 
 **Decision.** Double-entry journals, once posted, cannot be edited. Corrections
@@ -103,10 +115,11 @@ engine (Stage 9) enforces this; earlier stages only expose posting hooks.
 ---
 
 ## ADR-0008 — Permission-based authorization enforced by RLS
+
 **Status:** Accepted
 
 **Decision.** Authorize by **permission codes**, not role names. Enforce in the
-server layer *and* in Postgres RLS. Branch visibility is computed from
+server layer _and_ in Postgres RLS. Branch visibility is computed from
 `user_branches` plus `branches.view_all` for Owner/Accounting; Auditors are
 read-only.
 
@@ -116,6 +129,7 @@ changes. UI hiding is convenience only.
 ---
 
 ## ADR-0009 — UUID primary keys and standard audit columns
+
 **Status:** Accepted
 
 **Decision.** UUID PKs everywhere; `created_at/updated_at/created_by` and
@@ -127,6 +141,7 @@ masters.
 ---
 
 ## ADR-0010 — Reusable domain services; business logic out of components
+
 **Status:** Accepted
 
 **Decision.** Inventory, accounting, tax, document-numbering and pricing logic
@@ -138,6 +153,7 @@ live in reusable services (`src/services/`) backed by pure domain functions
 ---
 
 ## ADR-0011 — Bilingual (English + Tagalog) via a translation dictionary
+
 **Status:** Accepted
 
 **Decision.** A dictionary structure under `src/i18n/` (en, tl). Components
@@ -148,24 +164,72 @@ through the dictionary.
 
 ---
 
+## ADR-0012 — Stage 1 foundation: pinned stack & coarse route protection
+
+**Status:** Accepted (Stage 1)
+
+**Context.** Stage 1 scaffolds the application. We must pick concrete, mutually
+compatible versions and a route-protection approach that works before real auth
+exists (Stage 2).
+
+**Decision.**
+
+- **Versions:** Next.js 15.5.x (App Router), React 19, TypeScript 5.7 (strict +
+  `noUncheckedIndexedAccess`), Tailwind CSS 3.4, shadcn/ui primitives (built in
+  `src/components/ui`), Vitest 2 + Testing Library, Playwright 1.49. Next was
+  pinned to a CVE-patched 15.5.x release (not the initial 15.1.x) per the
+  security rule.
+- **shadcn/ui** components are vendored directly into the repo (not pulled via
+  the CLI at build time) so the build is hermetic.
+- **Route protection** is implemented in middleware via a pure, unit-tested
+  decision function (`src/lib/auth/route-access.ts`): unauthenticated users are
+  redirected from the protected `(app)` group to `/login`. Fine-grained,
+  permission-based authorization and RLS arrive in Stage 2.
+- **Env validation** (`src/lib/env.ts`, Zod) is **lazy** (inside getters) so a
+  production build without secrets still succeeds, while runtime code paths that
+  need Supabase fail fast with a clear message.
+
+**Consequences.** A reliable, type-safe, testable base. The legacy prototype was
+moved to `legacy/` and excluded from lint/build/test surfaces.
+
+---
+
+## ADR-0013 — Temporary `DEV_PREVIEW` flag for Stage 1 shell preview
+
+**Status:** Accepted (Stage 1) — _to be removed in Stage 2_
+
+**Context.** Until Stage 2 implements Supabase auth there is no way to obtain a
+session, so the secure default (redirect protected routes to `/login`) makes the
+app shell impossible to preview.
+
+**Decision.** A **server-only**, non-production env flag `DEV_PREVIEW=1` causes
+middleware to treat the request as authenticated. It is ignored when
+`NODE_ENV === "production"`, never exposed to the client, and documented as
+temporary scaffolding.
+
+**Consequences.** Reviewers can preview the shell locally without weakening the
+default behaviour. Stage 2 must delete this flag once real sessions exist.
+
+---
+
 ## Open decisions (to resolve in the stage that needs them)
 
 - **OPEN-A — "Authorized accounting users see all branches" mechanism.**
   Grant `branches.view_all` to the Accounting role vs. a per-user flag.
-  *Resolve in Stage 2.*
+  _Resolve in Stage 2._
 - **OPEN-B — Decimal handling in TypeScript.** Pass numerics as strings and
   compute in SQL only, vs. adopt a decimal library for any client-side preview
-  math. *Resolve in Stage 1/Stage 6.*
+  math. _Resolve in Stage 1/Stage 6._
 - **OPEN-C — Balance storage.** Pure on-the-fly aggregation of movements vs. a
-  function-maintained `inventory_balances` cache (current lean: cache). *Confirm
-  in Stage 4.*
+  function-maintained `inventory_balances` cache (current lean: cache). _Confirm
+  in Stage 4._
 - **OPEN-D — Document numbering format** per branch/doc type (prefixes, padding,
-  yearly reset). *Resolve when numbering service is built (Stage 5/6).*
+  yearly reset). _Resolve when numbering service is built (Stage 5/6)._
 - **OPEN-E — Offline sync conflict policy** beyond idempotency (e.g. last-writer
-  vs. queued replay). *Resolve in Stage 15.*
+  vs. queued replay). _Resolve in Stage 15._
 - **OPEN-F — QuickBooks data shape & access** for the 5-year migration
-  (export format, COA mapping, opening-balance cutover date). *Resolve in
-  Stage 16; needs owner input early.*
+  (export format, COA mapping, opening-balance cutover date). _Resolve in
+  Stage 16; needs owner input early._
 
 ---
 
@@ -193,4 +257,3 @@ decision above and will get focused tests.
 8. **Multi-branch permissions** — permission-based, RLS-enforced, branch-scoped
    visibility with all-branch override for Owner/Accounting and read-only
    Auditor. (ADR-0008, Stage 2)
-</content>
